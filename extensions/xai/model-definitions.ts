@@ -5,6 +5,7 @@ export const XAI_BASE_URL = "https://api.x.ai/v1";
 export const XAI_DEFAULT_IMAGE_MODEL = "grok-imagine-image";
 export const XAI_IMAGE_MODELS = ["grok-imagine-image", "grok-imagine-image-pro"] as const;
 export const XAI_DEFAULT_CONTEXT_WINDOW = 256_000;
+export const XAI_1M_CONTEXT_WINDOW = 1_000_000;
 export const XAI_LARGE_CONTEXT_WINDOW = 2_000_000;
 export const XAI_CODE_CONTEXT_WINDOW = 256_000;
 export const XAI_DEFAULT_MAX_TOKENS = 64_000;
@@ -40,8 +41,15 @@ const XAI_FAST_COST = {
 } satisfies XaiCost;
 
 const XAI_GROK_420_COST = {
-  input: 2,
-  output: 6,
+  input: 1.25,
+  output: 2.5,
+  cacheRead: 0.2,
+  cacheWrite: 0,
+} satisfies XaiCost;
+
+const XAI_GROK_43_COST = {
+  input: 1.25,
+  output: 2.5,
   cacheRead: 0.2,
   cacheWrite: 0,
 } satisfies XaiCost;
@@ -161,6 +169,15 @@ const XAI_MODEL_CATALOG = [
     contextWindow: XAI_LARGE_CONTEXT_WINDOW,
     maxTokens: 30_000,
     cost: XAI_GROK_420_COST,
+  },
+  {
+    id: "grok-4.3",
+    name: "Grok 4.3",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: XAI_1M_CONTEXT_WINDOW,
+    maxTokens: 30_000,
+    cost: XAI_GROK_43_COST,
   },
   {
     id: "grok-code-fast-1",
