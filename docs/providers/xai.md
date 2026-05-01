@@ -25,7 +25,7 @@ OpenClaw ships a bundled `xai` provider plugin for Grok models.
   <Step title="Pick a model">
     ```json5
     {
-      agents: { defaults: { model: { primary: "xai/grok-4" } } },
+      agents: { defaults: { model: { primary: "xai/grok-4.3" } } },
     }
     ```
   </Step>
@@ -51,13 +51,14 @@ OpenClaw includes these xAI model families out of the box:
 | Grok 4 Fast    | `grok-4-fast`, `grok-4-fast-non-reasoning`                               |
 | Grok 4.1 Fast  | `grok-4-1-fast`, `grok-4-1-fast-non-reasoning`                           |
 | Grok 4.20 Beta | `grok-4.20-beta-latest-reasoning`, `grok-4.20-beta-latest-non-reasoning` |
+| Grok 4.3       | `grok-4.3`                                                               |
 | Grok Code      | `grok-code-fast-1`                                                       |
 
 The plugin also forward-resolves newer `grok-4*` and `grok-code-fast*` ids when
 they follow the same API shape.
 
 <Tip>
-`grok-4-fast`, `grok-4-1-fast`, and the `grok-4.20-beta-*` variants are the
+`grok-4-fast`, `grok-4-1-fast`, `grok-4.20-beta-*`, and `grok-4.3` are the
 current image-capable Grok refs in the bundled catalog.
 </Tip>
 
