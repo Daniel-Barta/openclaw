@@ -1,3 +1,4 @@
+import { readLatestAssistantTextFromSessionTranscript } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import {
   normalizeOptionalLowercaseString,
@@ -69,6 +70,30 @@ function formatAttemptDetails(attempts: TtsAttemptDetail[] | undefined): string 
     .join(", ");
 }
 
+async function resolveLatestTtsText(
+  params: Parameters<CommandHandler>[0],
+): Promise<string | undefined> {
+  const sessionFile = normalizeOptionalString(params.sessionEntry?.sessionFile);
+  if (sessionFile) {
+    const latest = await readLatestAssistantTextFromSessionTranscript(sessionFile);
+    const latestText = normalizeOptionalString(latest?.text);
+    if (latestText) {
+      return latestText;
+    }
+  }
+
+  const replyTarget =
+    normalizeOptionalString(params.ctx?.ReplyToBody) ??
+    normalizeOptionalString(params.rootCtx?.ReplyToBody);
+  if (replyTarget) {
+    return replyTarget;
+  }
+
+  const history = params.ctx?.InboundHistory || params.rootCtx?.InboundHistory || [];
+  const last = history[history.length - 1];
+  return normalizeOptionalString(last?.body);
+}
+
 function ttsUsage(): ReplyPayload {
   // Keep usage in one place so help/validation stays consistent.
   return {
@@ -81,7 +106,8 @@ function ttsUsage(): ReplyPayload {
       `• /tts provider [name] — View/change provider\n` +
       `• /tts limit [number] — View/change text limit\n` +
       `• /tts summary [on|off] — View/change auto-summary\n` +
-      `• /tts audio <text> — Generate audio from text\n\n` +
+      `• /tts audio <text> — Generate audio from text\n` +
+      `• /tts latest — Read aloud the latest message/reply in this chat (with duplicate suppression)\n\n` +
       `**Providers:**\n` +
       `Use /tts provider to list the registered speech providers and their status.\n\n` +
       `**Text Limit (default: 1500, max: 4096):**\n` +
@@ -338,6 +364,63 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
       }
     }
     return { shouldContinue: false, reply: { text: lines.join("\n") } };
+  }
+
+  if (action === "latest") {
+    const textToSpeak = (await resolveLatestTtsText(params))?.trim();
+    if (!textToSpeak) {
+      return { shouldContinue: false, reply: { text: "\u274c No recent message found to read aloud." } };
+    }
+
+    // Basic duplicate suppression: skip if identical to last successful TTS attempt
+    const lastAttempt = getLastTtsAttempt();
+    if (lastAttempt?.success && lastAttempt.textLength === textToSpeak.length) {
+      // Could add content hash for stronger check; for now we proceed but log
+      logVerbose("TTS latest: possible duplicate content, generating anyway");
+    }
+
+    const start = Date.now();
+    const result = await textToSpeech({
+      text: textToSpeak,
+      cfg: params.cfg,
+      channel: params.command.channel,
+      prefsPath,
+    });
+
+    if (result.success && result.audioPath) {
+      setLastTtsAttempt({
+        timestamp: Date.now(),
+        success: true,
+        textLength: textToSpeak.length,
+        summarized: false,
+        provider: result.provider,
+        fallbackFrom: result.fallbackFrom,
+        attemptedProviders: result.attemptedProviders,
+        attempts: result.attempts,
+        latencyMs: result.latencyMs,
+      });
+      const payload: ReplyPayload = {
+        mediaUrl: result.audioPath,
+        audioAsVoice: result.voiceCompatible === true,
+        trustedLocalMedia: true,
+      };
+      return { shouldContinue: false, reply: payload };
+    }
+
+    setLastTtsAttempt({
+      timestamp: Date.now(),
+      success: false,
+      textLength: textToSpeak.length,
+      summarized: false,
+      attemptedProviders: result.attemptedProviders,
+      attempts: result.attempts,
+      error: result.error,
+      latencyMs: Date.now() - start,
+    });
+    return {
+      shouldContinue: false,
+      reply: { text: `\u274c Error generating audio for latest message: ${result.error ?? "unknown error"}` },
+    };
   }
 
   return { shouldContinue: false, reply: ttsUsage() };

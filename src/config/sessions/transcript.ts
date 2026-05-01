@@ -283,6 +283,37 @@ function extractAssistantMessageText(message: SessionTranscriptAssistantMessage)
   return parts.length > 0 ? parts.join("\n").trim() : null;
 }
 
+export async function readLatestAssistantTextFromSessionTranscript(
+  sessionFile: string,
+): Promise<{ text: string } | undefined> {
+  try {
+    const raw = await fs.promises.readFile(sessionFile, "utf-8");
+    const lines = raw.split(/\r?\n/);
+    for (let index = lines.length - 1; index >= 0; index -= 1) {
+      const line = lines[index];
+      if (!line.trim()) {
+        continue;
+      }
+      try {
+        const parsed = JSON.parse(line) as { message?: SessionTranscriptAssistantMessage };
+        if (parsed.message?.role !== "assistant") {
+          continue;
+        }
+        const text = extractAssistantMessageText(parsed.message);
+        if (text) {
+          return { text };
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 async function findLatestEquivalentAssistantMessageId(
   transcriptPath: string,
   message: SessionTranscriptAssistantMessage,
