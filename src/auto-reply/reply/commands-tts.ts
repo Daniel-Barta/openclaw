@@ -69,6 +69,19 @@ function formatAttemptDetails(attempts: TtsAttemptDetail[] | undefined): string 
     .join(", ");
 }
 
+function resolveLatestTtsText(params: Parameters<CommandHandler>[0]): string | undefined {
+  const replyTarget =
+    normalizeOptionalString(params.ctx?.ReplyToBody) ??
+    normalizeOptionalString(params.rootCtx?.ReplyToBody);
+  if (replyTarget) {
+    return replyTarget;
+  }
+
+  const history = params.ctx?.InboundHistory || params.rootCtx?.InboundHistory || [];
+  const last = history[history.length - 1];
+  return normalizeOptionalString(last?.body);
+}
+
 function ttsUsage(): ReplyPayload {
   // Keep usage in one place so help/validation stays consistent.
   return {
@@ -342,14 +355,9 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
   }
 
   if (action === "latest") {
-    const history = params.ctx?.InboundHistory || params.rootCtx?.InboundHistory || [];
-    if (history.length === 0) {
-      return { shouldContinue: false, reply: { text: "\u274c No recent message found to read aloud." } };
-    }
-    const last = history[history.length - 1];
-    const textToSpeak = last?.body?.trim();
+    const textToSpeak = resolveLatestTtsText(params)?.trim();
     if (!textToSpeak) {
-      return { shouldContinue: false, reply: { text: "\u274c Latest message has no text content." } };
+      return { shouldContinue: false, reply: { text: "\u274c No recent message found to read aloud." } };
     }
 
     // Basic duplicate suppression: skip if identical to last successful TTS attempt
