@@ -1,3 +1,4 @@
+import { readLatestAssistantTextFromSessionTranscript } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import {
   normalizeOptionalLowercaseString,
@@ -69,7 +70,18 @@ function formatAttemptDetails(attempts: TtsAttemptDetail[] | undefined): string 
     .join(", ");
 }
 
-function resolveLatestTtsText(params: Parameters<CommandHandler>[0]): string | undefined {
+async function resolveLatestTtsText(
+  params: Parameters<CommandHandler>[0],
+): Promise<string | undefined> {
+  const sessionFile = normalizeOptionalString(params.sessionEntry?.sessionFile);
+  if (sessionFile) {
+    const latest = await readLatestAssistantTextFromSessionTranscript(sessionFile);
+    const latestText = normalizeOptionalString(latest?.text);
+    if (latestText) {
+      return latestText;
+    }
+  }
+
   const replyTarget =
     normalizeOptionalString(params.ctx?.ReplyToBody) ??
     normalizeOptionalString(params.rootCtx?.ReplyToBody);
@@ -355,7 +367,7 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
   }
 
   if (action === "latest") {
-    const textToSpeak = resolveLatestTtsText(params)?.trim();
+    const textToSpeak = (await resolveLatestTtsText(params))?.trim();
     if (!textToSpeak) {
       return { shouldContinue: false, reply: { text: "\u274c No recent message found to read aloud." } };
     }
