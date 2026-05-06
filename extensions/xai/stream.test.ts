@@ -139,6 +139,21 @@ describe("xai stream wrappers", () => {
     expect(payload).not.toHaveProperty("reasoning_effort");
   });
 
+  it("preserves reasoning controls for grok-4.3 payloads", () => {
+    const payload: Record<string, unknown> = {
+      reasoning: { effort: "medium" },
+      reasoningEffort: "medium",
+      reasoning_effort: "medium",
+    };
+    runXaiToolPayloadWrapper({ payload, modelId: "grok-4.3" });
+
+    expect(payload).toMatchObject({
+      reasoning: { effort: "medium" },
+      reasoningEffort: "medium",
+      reasoning_effort: "medium",
+    });
+  });
+
   it("moves image-bearing tool results out of function_call_output payloads", () => {
     const payload: Record<string, unknown> = {
       input: [
