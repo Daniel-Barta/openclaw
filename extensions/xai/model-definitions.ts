@@ -220,6 +220,10 @@ export function buildXaiCatalogModels(): ModelDefinitionConfig[] {
   return XAI_MODEL_CATALOG.map((entry) => toModelDefinition(entry));
 }
 
+export function supportsXaiReasoningEffortModel(modelId: unknown): boolean {
+  return typeof modelId === "string" && resolveXaiCatalogEntry(modelId)?.id === "grok-4.3";
+}
+
 export function resolveXaiCatalogEntry(modelId: string) {
   const trimmed = modelId.trim();
   const lower = normalizeOptionalLowercaseString(modelId) ?? "";

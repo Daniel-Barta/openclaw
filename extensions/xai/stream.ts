@@ -6,6 +6,7 @@ import {
   createHtmlEntityToolCallArgumentDecodingWrapper,
   createToolStreamWrapper,
 } from "openclaw/plugin-sdk/provider-stream-shared";
+import { supportsXaiReasoningEffortModel } from "./model-definitions.js";
 
 const XAI_FAST_MODEL_IDS = new Map<string, string>([
   ["grok-3", "grok-3-fast"],
@@ -160,6 +161,7 @@ export function createXaiToolPayloadCompatibilityWrapper(
 ): StreamFn {
   const underlying = baseStreamFn ?? streamSimple;
   return (model, context, options) => {
+    const keepReasoningControls = supportsXaiReasoningEffortModel(model.id);
     const originalOnPayload = options?.onPayload;
     return underlying(model, context, {
       ...options,
@@ -170,9 +172,11 @@ export function createXaiToolPayloadCompatibilityWrapper(
             payloadObj.tools = payloadObj.tools.map((tool) => stripUnsupportedStrictFlag(tool));
           }
           normalizeXaiResponsesToolResultPayload(payloadObj, model);
-          delete payloadObj.reasoning;
-          delete payloadObj.reasoningEffort;
-          delete payloadObj.reasoning_effort;
+          if (!keepReasoningControls) {
+            delete payloadObj.reasoning;
+            delete payloadObj.reasoningEffort;
+            delete payloadObj.reasoning_effort;
+          }
         }
         return originalOnPayload?.(payload, model);
       },

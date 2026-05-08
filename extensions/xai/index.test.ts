@@ -208,6 +208,30 @@ describe("xai provider plugin", () => {
     ).toBe(false);
   });
 
+  it("exposes low-medium-high thinking levels for grok-4.3 only", async () => {
+    const provider = await registerSingleProviderPlugin(plugin);
+
+    expect(
+      provider.resolveThinkingProfile?.({
+        provider: "xai",
+        modelId: "grok-4.3",
+      } as never),
+    ).toEqual({
+      levels: [{ id: "low" }, { id: "medium" }, { id: "high" }],
+      defaultLevel: "medium",
+    });
+
+    expect(
+      provider.resolveThinkingProfile?.({
+        provider: "xai",
+        modelId: "grok-4",
+      } as never),
+    ).toEqual({
+      levels: [{ id: "off" }],
+      defaultLevel: "off",
+    });
+  });
+
   it("owns xai compat flags for direct and downstream routed models", async () => {
     const provider = await registerSingleProviderPlugin(plugin);
 

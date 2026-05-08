@@ -26,6 +26,7 @@ import {
   buildMissingXSearchApiKeyPayload,
   createXSearchToolDefinition,
 } from "./x-search-tool-shared.js";
+import { supportsXaiReasoningEffortModel } from "./model-definitions.js";
 
 const PROVIDER_ID = "xai";
 type CodeExecutionModule = typeof import("./code-execution.js");
@@ -201,7 +202,12 @@ export default defineSingleProviderPluginEntry({
       shouldContributeXaiCompat({ modelId, model }) ? resolveXaiModelCompatPatch() : undefined,
     normalizeModelId: ({ modelId }) => normalizeXaiModelId(modelId),
     resolveDynamicModel: (ctx) => resolveXaiForwardCompatModel({ providerId: PROVIDER_ID, ctx }),
-    resolveThinkingProfile: () => ({ levels: [{ id: "off" }], defaultLevel: "off" }),
+    resolveThinkingProfile: ({ modelId }) => ({
+      levels: supportsXaiReasoningEffortModel(modelId)
+        ? [{ id: "low" }, { id: "medium" }, { id: "high" }]
+        : [{ id: "off" }],
+      defaultLevel: supportsXaiReasoningEffortModel(modelId) ? "medium" : "off",
+    }),
     isModernModelRef: ({ modelId }) => isModernXaiModel(modelId),
   },
   register(api) {
