@@ -5,8 +5,8 @@
   "description": "OpenClaw persistent wiki plugin",
   "type": "module",
   "dependencies": {
-    "typebox": "1.1.28",
-    "yaml": "^2.8.3"
+    "typebox": "1.1.38",
+    "yaml": "^2.8.4"
   },
   "devDependencies": {
     "@openclaw/plugin-sdk": "workspace:*",

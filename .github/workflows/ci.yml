@@ -1857,7 +1857,7 @@ jobs:
         id: pnpm-cache
         uses: ./.github/actions/setup-pnpm-store-cache
         with:
-          pnpm-version: "10.33.0"
+          pnpm-version: "10.33.4"
           cache-key-suffix: "node24"
           use-restore-keys: "false"
           use-actions-cache: "true"
